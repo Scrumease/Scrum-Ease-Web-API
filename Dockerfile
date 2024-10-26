@@ -1,5 +1,4 @@
-# Base image
-FROM node:22-alpine
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -9,10 +8,20 @@ RUN npm install
 
 COPY . .
 
-COPY .env .env
-
 RUN npm run build
 
-EXPOSE 3000
+RUN npm prune --production
 
-CMD ["npm", "run", "start:dev"]
+FROM node:22-alpine AS production
+
+WORKDIR /app
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./package.json
+
+EXPOSE 8080
+
+ENV NODE_ENV=production
+
+CMD ["node", "dist/main"]

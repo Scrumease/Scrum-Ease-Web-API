@@ -1,21 +1,12 @@
 version: '3.8'
 
 services:
-  # app:
-  #   build: .
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - MONGO_URI=mongodb://mongo:27017/scrum-db
-  #   depends_on:
-  #     - mongo
-
-  mongo:
-    image: mongo:4.4
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-volumes:
-  mongo-data:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      NODE_ENV: production

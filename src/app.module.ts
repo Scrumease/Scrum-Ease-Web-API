@@ -12,7 +12,6 @@ import { IntegrationTokenModule } from './modules/integration-token.module';
 import { ProjectModule } from './modules/project.module';
 import { FormModule } from './modules/form.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { NotificationService } from './services/notification.service';
 import { NotificationModule } from './modules/notification.module';
 
 @Module({
@@ -24,7 +23,6 @@ import { NotificationModule } from './modules/notification.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         uri:
-          'mongodb://localhost:27017/scrum-db' ??
           configService.get<string>('MONGO_URI'),
       }),
       inject: [ConfigService],

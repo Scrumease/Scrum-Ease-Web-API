@@ -15,7 +15,7 @@ import { RoleModule } from './role.module';
       useFactory: async (config: ConfigService) => ({
         transport: {
           host: config.get('MAIL_HOST'),
-          port: 587,
+          port: config.get('MAIL_PORT'),
           secure: false,
           auth: {
             user: config.get('SMTP_USERNAME'),
