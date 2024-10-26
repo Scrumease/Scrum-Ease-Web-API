@@ -1,0 +1,7 @@
+export enum UserPermissionsEnum {
+  CREATE_USER = 'CREATE_USER',
+  LIST_USERS = 'LIST_USERS',
+  VIEW_USER = 'VIEW_USER',
+  UPDATE_USER = 'UPDATE_USER',
+  DELETE_USER = 'DELETE_USER',
+}

@@ -1,0 +1,6 @@
+export enum FormPermissionsEnum {
+  CREATE_FORM = 'CREATE_FORM',
+  UPDATE_FORM = 'UPDATE_FORM',
+  VIEW_FORM = 'VIEW_FORM',
+  DELETE_FORM = 'DELETE_FORM',
+}

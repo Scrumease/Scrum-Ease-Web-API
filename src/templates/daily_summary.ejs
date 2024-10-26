@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resumo da Daily</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+      color: #004085;
+    }
+    .response-item {
+      margin-bottom: 15px;
+    }
+    .question {
+      font-weight: bold;
+    }
+    .answer {
+      margin-left: 10px;
+      color: #555;
+    }
+    .user {
+      margin-top: 5px;
+      font-size: 0.9em;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Resumo da Daily - <%= projectName %></h2>
+
+    <p>Olá <%= name %>, Segue o resumo das respostas da sua equipe para o dia de hoje:</p>
+
+    <% responses.forEach(function(response) { %>
+      <div class="response-item">
+        <div class="question">Pergunta: <%= response.question %></div>
+        <div class="answer">Resposta: <%= response.answer %></div>
+        <div class="user">Respondido por: <%= response.respondedBy %></div>
+      </div>
+    <% }) %>
+
+    <p>Se você tiver alguma dúvida ou precisar de mais informações, entre em contato com a sua equipe.</p>
+  </div>
+</body>
+</html>

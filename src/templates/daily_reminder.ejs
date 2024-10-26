@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lembrete para a Daily do Projeto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #0056b3;
+    }
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin-top: 20px;
+      background-color: #0056b3;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .btn:hover {
+      background-color: #004494;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Olá, <%= userName %>!</h1>
+
+    <p>Este é um lembrete para completar sua daily no projeto <strong><%= projectName %></strong>.</p>
+
+    <p>Sabemos que a daily é uma parte importante para manter a equipe alinhada e garantir que todos estejam atualizados sobre o progresso das atividades.</p>
+
+    <p>
+      Por favor, responda às perguntas da daily para o dia de hoje.
+    </p>
+
+    <a href="<%= frontendUrl %>" class="btn">Ir para a plataforma</a>
+
+    <div class="footer">
+      <p>Obrigado por sua dedicação!</p>
+      <p>Equipe <%= tenantName %></p>
+    </div>
+  </div>
+</body>
+</html>

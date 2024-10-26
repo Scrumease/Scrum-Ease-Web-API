@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convite para se juntar à nossa plataforma</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+        }
+        p {
+            color: #666;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Convite para se juntar à nossa plataforma</h2>
+        <p>Olá <%= email %>,</p>
+        <p>Você recebeu um convite para se juntar à nossa plataforma.</p>
+        <p>Clique no botão abaixo para aceitar o convite:</p>
+        <a class="button" href="<%= acceptUrl %>">Aceitar Convite</a>
+        <p>Se o botão não funcionar, copie e cole o seguinte link em seu navegador:</p>
+        <p><%= acceptUrl %></p>
+        <p>Obrigado!</p>
+        <p>Equipe da Plataforma</p>
+    </div>
+</body>
+</html>
