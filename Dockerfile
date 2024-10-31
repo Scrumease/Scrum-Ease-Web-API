@@ -30,8 +30,6 @@ COPY --from=build /app/package.json ./package.json
 
 EXPOSE 8080
 
-ENV NODE_ENV=production
-
 ENV PORT=$PORT
 ENV NODE_ENV=$NODE_ENV
 ENV MONGO_URI=$MONGO_URI
