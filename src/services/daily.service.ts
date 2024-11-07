@@ -152,7 +152,12 @@ export class DailyService {
       await this.mailService.notifyUrgent(tos, notify);
     }
 
-    await daily.updateOne(daily);
+    await daily.updateOne(daily).exec();
+
+    await this.sendSummaryEmail(
+      daily.formSnapshot.projectId as Types.ObjectId,
+      dto.date,
+    );
   }
 
   async getEntries(
@@ -319,5 +324,55 @@ export class DailyService {
     return dateToConvert.toLocaleDateString('pt-BR', {
       timeZone: timezone,
     });
+  }
+
+  private async sendSummaryEmail(
+    projectId: Types.ObjectId,
+    currentDay: string,
+  ) {
+    const project = await this.projectModel.findById(projectId).exec();
+
+    const totalUsers = project.users.length;
+
+    const responsesForThatProject = await this.dailyModel
+      .find({
+        'formSnapshot.projectId': projectId,
+        date: currentDay,
+        formResponses: { $ne: [] },
+      })
+      .populate('userId', '_id email name')
+      .exec();
+
+    const totalResponses = responsesForThatProject.length;
+
+    if (totalResponses === totalUsers) {
+      const tos = project.users.map((u) => u._id);
+      const responses = [];
+
+      responsesForThatProject.map((r) => {
+        r.formResponses.map((fr) => {
+          responses.push({
+            question: fr.textQuestion,
+            answer: fr.answer,
+            respondedBy: (r.userId as UserDocument).name,
+          });
+        });
+      });
+
+      for (const to of tos) {
+        const user = await this.userModel.findOne({ _id: to }).exec();
+        await this.mailService.sendEmail(
+          [user.email],
+          `Resumo da sua daily - Projeto: ${project.name}`,
+          'daily_summary',
+          {
+            name: user.name,
+            projectName: project.name,
+            responses: responses,
+            date: currentDay,
+          },
+        );
+      }
+    }
   }
 }
