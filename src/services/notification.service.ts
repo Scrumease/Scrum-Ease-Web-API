@@ -194,6 +194,7 @@ export class NotificationService {
               name: user.name,
               projectName: project.projectName,
               responses: project.responses,
+              date,
             },
           );
         }
