@@ -47,52 +47,52 @@ export class UserService {
     search?: string,
   ): Promise<FindPaginated<IUser>> {
     const tenantId = currentUser.currentTenant.tenantId;
-    let users = []
+    let users = [];
 
-    if(limit < 0){
+    if (limit < 0) {
       users = await this.userModel
-      .find({
-        'tenantRoles.tenant': tenantId,
-        name: { $regex: search || '', $options: 'i' },
-      })
-      .populate({
-        path: 'tenantRoles.role',
-        model: Role.name,
-      })
-      .populate({
-        path: 'tenantRoles.tenant',
-        model: Tenant.name,
-      })
-      .exec();
+        .find({
+          'tenantRoles.tenant': tenantId,
+          name: { $regex: search || '', $options: 'i' },
+        })
+        .populate({
+          path: 'tenantRoles.role',
+          model: Role.name,
+        })
+        .populate({
+          path: 'tenantRoles.tenant',
+          model: Tenant.name,
+        })
+        .exec();
     } else {
       users = await this.userModel
-      .find({
-        'tenantRoles.tenant': tenantId,
-        name: { $regex: search || '', $options: 'i' },
-        '_id': { $ne: currentUser.userId },
-      })
-      .populate({
-        path: 'tenantRoles.role',
-        model: Role.name,
-      })
-      .populate({
-        path: 'tenantRoles.tenant',
-        model: Tenant.name,
-      })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec();
+        .find({
+          'tenantRoles.tenant': tenantId,
+          name: { $regex: search || '', $options: 'i' },
+          _id: { $ne: currentUser.userId },
+        })
+        .populate({
+          path: 'tenantRoles.role',
+          model: Role.name,
+        })
+        .populate({
+          path: 'tenantRoles.tenant',
+          model: Tenant.name,
+        })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec();
     }
 
     const data = users.map((user) => {
-      const { password, ...userWithoutPassword } = user.toObject();    
+      const { password, ...userWithoutPassword } = user.toObject();
       return userWithoutPassword as IUser;
     });
 
     const total = await this.userModel.countDocuments({
       'tenantRoles.tenant': tenantId,
       name: { $regex: search || '', $options: 'i' },
-      '_id': { $ne: currentUser.userId },
+      _id: { $ne: currentUser.userId },
     });
 
     return {
@@ -100,7 +100,7 @@ export class UserService {
       limit,
       total: total,
       data,
-    }
+    };
   }
 
   async findOne(id: string): Promise<IUser> {
@@ -230,10 +230,14 @@ export class UserService {
       throw new UnprocessableEntityException('User already exists');
     }
 
-    const invite = await this.inviteModel.findOne({
-      email: dto.email,
-      tenantId: tenantId,
-    },).sort('createdAt').populate('roleId').exec();
+    const invite = await this.inviteModel
+      .findOne({
+        email: dto.email,
+        tenantId: tenantId,
+      })
+      .sort('createdAt')
+      .populate('roleId')
+      .exec();
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const createdUser = new this.userModel({
@@ -257,7 +261,7 @@ export class UserService {
     return createdUser.toObject() as IUser;
   }
 
-  async addOrganizationByInvite(email: string, tenantId: string){
+  async addOrganizationByInvite(email: string, tenantId: string) {
     const tenant = await this.tenantService.findOne(tenantId);
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
@@ -275,10 +279,14 @@ export class UserService {
       throw new UnprocessableEntityException('User already exists');
     }
 
-    const invite = await this.inviteModel.findOne({
-      email,
-      tenantId,
-    }).sort('createdAt').populate('roleId').exec();
+    const invite = await this.inviteModel
+      .findOne({
+        email,
+        tenantId,
+      })
+      .sort('createdAt')
+      .populate('roleId')
+      .exec();
 
     const u = await this.userModel.findOne({
       email,

@@ -7,15 +7,23 @@ import {
   HttpCode,
   Param,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiResponse,
+  ApiParam,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/config/auth/guard/jwt.guard';
 import { LocalAuthGuard } from 'src/config/auth/guard/local.guard';
+import { jwtPayload } from 'src/config/auth/strategy/jwt.strategy';
 import { RegisterAdminDto } from 'src/dtos/auth/register-admin.dto';
 import { RegisterUserDto } from 'src/dtos/auth/register-user.dto';
 import { verifyInviteTokenDto } from 'src/dtos/auth/verify.dto';
 import { IUser } from 'src/schemas/interfaces/user.interface';
 import { AuthService } from 'src/services/auth.service';
 import { InviteService } from 'src/services/invite.service';
+import { MailService } from 'src/services/mail.service';
 import { UserService } from 'src/services/user.service';
 
 @ApiTags('auth')
@@ -105,15 +113,27 @@ export class AuthController {
     description: 'Usuário criado com sucesso.',
   })
   @ApiResponse({ status: 400, description: 'Requisição inválida.' })
-  async register(@Body() registerUserDto: RegisterUserDto, @Param('tenantId') tenantId: string): Promise<IUser> {
+  async register(
+    @Body() registerUserDto: RegisterUserDto,
+    @Param('tenantId') tenantId: string,
+  ): Promise<IUser> {
     return this.userService.registerByInvite(registerUserDto, tenantId);
   }
 
   @Post('register-by-invite/:tenantId/:email')
-  @ApiParam({ name: 'example1', example: {tenantId: '669f02354355439b28784a2d', email: 'joedoe@gmail.com'} })
+  @ApiParam({
+    name: 'example1',
+    example: {
+      tenantId: '669f02354355439b28784a2d',
+      email: 'joedoe@gmail.com',
+    },
+  })
   @ApiOperation({ summary: 'Criar um novo usuário' })
   @HttpCode(200)
-  async addOrganizationByInvite(@Param('tenantId') tenantId: string, @Param('email') email: string) {
+  async addOrganizationByInvite(
+    @Param('tenantId') tenantId: string,
+    @Param('email') email: string,
+  ) {
     return this.userService.addOrganizationByInvite(email, tenantId);
   }
 
@@ -151,6 +171,79 @@ export class AuthController {
       dto.token,
       dto.email,
       dto.tenantId,
+    );
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Solicita a recuperação de senha' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: '' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email enviado com sucesso',
+  })
+  @ApiResponse({ status: 400, description: 'Email inválido' })
+  async forgotPassword(@Body('email') email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reseta a senha do usuário' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string', example: '' },
+        password: { type: 'string', example: '' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Senha alterada com sucesso',
+  })
+  @ApiResponse({ status: 400, description: 'Token inválido' })
+  async resetPassword(
+    @Body('token') token: string,
+    @Body('password') password: string,
+    @Body('email') email: string,
+    @Body('validity') validity: string,
+  ) {
+    return this.authService.resetPassword(token, password, email, validity);
+  }
+
+  @Post('change-password')
+  @ApiOperation({ summary: 'Altera a senha do usuário' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        oldPassword: { type: 'string', example: '' },
+        newPassword: { type: 'string', example: '' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Senha alterada com sucesso',
+  })
+  @ApiResponse({ status: 400, description: 'Senha inválida' })
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Request() req,
+    @Body('currentPassword') oldPassword: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.authService.changePassword(
+      oldPassword,
+      newPassword,
+      (req.user as jwtPayload).userId,
     );
   }
 }

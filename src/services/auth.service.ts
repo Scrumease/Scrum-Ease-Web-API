@@ -1,3 +1,4 @@
+import { jwtPayload } from './../config/auth/strategy/jwt.strategy';
 import {
   ForbiddenException,
   Injectable,
@@ -12,7 +13,9 @@ import { User } from 'src/schemas/user';
 import { IUser } from 'src/schemas/interfaces/user.interface';
 import { IRole } from 'src/schemas/interfaces/role.interface';
 import { SessionDocument } from 'src/schemas/session';
-
+import { MailService } from './mail.service';
+import { Tenant, TenantDocument } from 'src/schemas/tenant';
+import * as crypto from 'crypto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -20,6 +23,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectModel('Session')
     private readonly sessionModel: Model<SessionDocument>,
+    @InjectModel(Tenant.name)
+    private readonly tenantDocument: Model<TenantDocument>,
+    private readonly mailService: MailService,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -55,10 +61,7 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(
-      payload,
-      { expiresIn: '7d' },
-    );
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
     await this.createSession(user._id, refreshToken);
 
@@ -96,13 +99,41 @@ export class AuthService {
       };
     };
 
-    const session = await this.sessionModel.findOne({ userId: decoded.sub, refreshToken });
+    const session = await this.sessionModel.findOne({
+      userId: decoded.sub,
+      refreshToken,
+    });
     if (!session) {
       throw new ForbiddenException('Invalid refresh token');
     }
 
     if (session.expiresAt < new Date()) {
       throw new ForbiddenException('Refresh token expired');
+    }
+
+    let tenant = await this.tenantDocument
+      .findById(decoded.currentTenant.tenantId)
+      .exec();
+
+    if (!tenant) {
+      const user = await this.userModel
+        .findOne({ _id: decoded.sub })
+        .populate({
+          path: 'tenantRoles.role',
+          model: 'Role',
+        })
+        .populate({
+          path: 'tenantRoles.tenant',
+          model: 'Tenant',
+        })
+        .exec();
+
+      let currentTenantRole = user.tenantRoles[0];
+
+      decoded.currentTenant = {
+        tenantId: currentTenantRole.tenant._id.toString(),
+        role: currentTenantRole.role.toString(),
+      };
     }
 
     const payload = {
@@ -127,7 +158,7 @@ export class AuthService {
     };
   }
 
-  private async findByEmail(email: string): Promise<IUser> {
+  async findByEmail(email: string): Promise<IUser> {
     const user = await this.userModel
       .findOne({ email })
       .populate({
@@ -146,6 +177,64 @@ export class AuthService {
     return user.toObject() as IUser;
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userModel.findOne({ email }).exec();
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const validity = new Date();
+    validity.setDate(validity.getDate() + 1);
+
+    const token = this.generateForgetPasswordToken(email, validity);
+    const changeUrl = `${process.env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${email}&validity=${validity.toISOString()}`;
+
+    this.mailService.sendEmail(email, 'Reset your password', 'reset_password', {
+      changeUrl,
+      email,
+    });
+  }
+
+  async resetPassword(
+    token: string,
+    password: string,
+    email: string,
+    validity: string,
+  ): Promise<void> {
+    const { isValid } = this.validateForgetPasswordToken(
+      token,
+      email,
+      validity,
+    );
+    if (!isValid) {
+      throw new UnauthorizedException('Token inválido');
+    }
+
+    const user = await this.userModel.findOne({ email }).exec();
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+  }
+
+  async changePassword(
+    oldPassword: string,
+    newPassword: string,
+    userId: string,
+  ): Promise<void> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    if (!(await bcrypt.compare(oldPassword, user.password))) {
+      throw new UnauthorizedException('Senha inválida');
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+  }
+
   private async createSession(
     userId: unknown,
     refreshToken: string,
@@ -160,5 +249,32 @@ export class AuthService {
     });
 
     return session.save();
+  }
+
+  generateForgetPasswordToken(email: string, validity: Date) {
+    const tokenData = `${email}-${validity.toISOString()}`;
+    const hmac = crypto
+      .createHmac('sha256', process.env.FORGET_PASSWORD_SECRET_KEY)
+      .update(tokenData)
+      .digest('hex');
+    return `${tokenData}.${hmac}`;
+  }
+
+  validateForgetPasswordToken(token: string, email: string, validity: string) {
+    const validityDate = new Date(validity);
+    const generatedToken = this.generateForgetPasswordToken(
+      email,
+      validityDate,
+    );
+
+    if (new Date() > validityDate) {
+      return { isValid: false, message: 'Token expirado.' };
+    }
+
+    if (`${generatedToken}` != token) {
+      return { isValid: false, message: 'Token inválido.' };
+    }
+
+    return { isValid: true };
   }
 }
