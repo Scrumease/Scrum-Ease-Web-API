@@ -36,6 +36,17 @@ import { FindPaginated } from 'src/dtos/common/findPaginatel.interface';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('me')
+  @ApiOperation({ summary: 'Buscar informações do usuário autenticado' })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuário retornado com sucesso.',
+    type: User,
+  })
+  async me(@Request() req: any): Promise<IUser> {
+    return this.userService.findOne(req.user.userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar um usuário pelo ID' })
   @ApiParam({ name: 'id', description: 'ID do usuário' })
@@ -49,24 +60,8 @@ export class UserController {
     return this.userService.findOne(id);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Atualizar um usuário pelo ID' })
-  @ApiParam({ name: 'id', description: 'ID do usuário' })
-  @ApiBody({
-    type: UpdateUserDto,
-    examples: {
-      example1: {
-        summary: 'Exemplo de atualização de usuário',
-        value: {
-          name: 'John Doe Updated',
-          email: 'john.doe.updated@example.com',
-          password: 'newStrongPassword123',
-          roles: ['60d0fe4f5311236168a109ca', '60d0fe4f5311236168a109cb'],
-          tenantId: '60d0fe4f5311236168a109cc',
-        },
-      },
-    },
-  })
+  @Put('me')
+  @ApiOperation({ summary: 'Atualizar o usuário logado' })
   @ApiResponse({
     status: 200,
     description: 'Usuário atualizado com sucesso.',
@@ -74,10 +69,10 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
   async update(
-    @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
+    @Request() req,
   ): Promise<User> {
-    return this.userService.update(id, updateUserDto);
+    return this.userService.update(req.user.userId, updateUserDto);
   }
 
   @Delete(':id')
@@ -102,10 +97,19 @@ export class UserController {
   })
   @ApiQuery({ name: 'page', description: 'Página' })
   @ApiQuery({ name: 'limit', description: 'Limite de itens por página' })
-  @ApiQuery({ name: 'search', description: 'Filtro de busca (Nome)', required: false })
+  @ApiQuery({
+    name: 'search',
+    description: 'Filtro de busca (Nome)',
+    required: false,
+  })
   @UseGuards(PermissionsGuard)
   @Permissions(PermissionsEnum.LIST_USERS)
-  async findAll(@Request() req: any, @Query('page', ParseIntPipe) page: number, @Query('limit', ParseIntPipe) limit: number, @Query('search') search?: string): Promise<FindPaginated<IUser>> {
+  async findAll(
+    @Request() req: any,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ): Promise<FindPaginated<IUser>> {
     return this.userService.findAll(req.user, page, limit, search);
   }
 }

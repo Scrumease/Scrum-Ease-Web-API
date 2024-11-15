@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { CreateUserDto } from 'src/dtos/user/create-user.dto';
 import { UpdateUserDto } from 'src/dtos/user/update-user.dto';
 import { User } from 'src/schemas/user';
 import * as bcrypt from 'bcrypt';
@@ -30,15 +29,6 @@ export class UserService {
     private tenantService: TenantService,
     private roleService: RoleService,
   ) {}
-
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const createdUser = new this.userModel({
-      ...createUserDto,
-      password: hashedPassword,
-    });
-    return createdUser.save();
-  }
 
   async findAll(
     currentUser: jwtPayload,
@@ -135,15 +125,8 @@ export class UserService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    if (updateUserDto.password) {
-      updateUserDto = {
-        ...updateUserDto,
-        password: await bcrypt.hash(updateUserDto.password, 10),
-      };
-    }
     const updatedUser = await this.userModel
       .findByIdAndUpdate(id, updateUserDto, { new: true })
-      .populate('roles')
       .exec();
     if (!updatedUser) {
       throw new NotFoundException('Usuário não encontrado');
