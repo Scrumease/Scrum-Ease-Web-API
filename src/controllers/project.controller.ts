@@ -19,8 +19,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/config/auth/guard/jwt.guard';
+import { jwtPayload } from 'src/config/auth/strategy/jwt.strategy';
 import { FindPaginated } from 'src/dtos/common/findPaginatel.interface';
 import { CreateProjectDto } from 'src/dtos/project/create-dto';
+import { ProjectCountByUser } from 'src/dtos/project/project-count-by-user';
 import { IProject } from 'src/schemas/interfaces/project.interface';
 import { ProjectService } from 'src/services/project.service';
 
@@ -30,6 +32,20 @@ import { ProjectService } from 'src/services/project.service';
 @ApiBearerAuth()
 export class ProjectController {
   constructor(private projectService: ProjectService) {}
+
+  @Get('count-by-user')
+  @ApiResponse({
+    status: 200,
+    description: 'Contagem de projetos por usuário',
+  })
+  async getProjectCountByUser(
+    @Request() req: { user: jwtPayload },
+  ): Promise<ProjectCountByUser[]> {
+    const result = await this.projectService.getProjectCountByUser(
+      req.user.currentTenant.tenantId,
+    );
+    return result;
+  }
 
   @Post()
   @ApiOperation({ summary: 'Cria um projeto' })
@@ -79,7 +95,10 @@ export class ProjectController {
     description: 'Projeto não encontrado',
   })
   @UseGuards(JwtAuthGuard)
-  async findById(@Request() req: any, @Param('id') id: string): Promise<IProject> {
+  async findById(
+    @Request() req: any,
+    @Param('id') id: string,
+  ): Promise<IProject> {
     return await this.projectService.findById(req.user, id);
   }
 
@@ -113,7 +132,10 @@ export class ProjectController {
     description: 'Projeto não encontrado',
   })
   @UseGuards(JwtAuthGuard)
-  async toggleActive(@Request() req: any, @Param('id') id: string): Promise<IProject> {
+  async toggleActive(
+    @Request() req: any,
+    @Param('id') id: string,
+  ): Promise<IProject> {
     return await this.projectService.toggleActive(id, req.user);
   }
 }
