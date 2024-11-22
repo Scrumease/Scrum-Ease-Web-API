@@ -58,6 +58,16 @@ class QuestionDto {
     type: AdvancedSettingsDto,
   })
   advancedSettings: AdvancedSettingsDto;
+
+  @ApiProperty({
+    description: 'Dependencies for the question',
+    required: false,
+  })
+  @IsOptional()
+  dependencies?: {
+    questionTitle: string;
+    expectedAnswer: string;
+  };
 }
 
 export class CreateFormDto {

@@ -36,6 +36,10 @@ export class Form extends BaseSchema {
           urgencyRecipients: [{ type: SchemaTypes.ObjectId, ref: 'User' }],
           urgencyThreshold: { type: Number, min: 0, max: 10, default: 0 },
         },
+        dependencies: {
+          questionTitle: { type: String },
+          expectedAnswer: { type: String },
+        },
       },
     ],
     required: true,
@@ -49,6 +53,10 @@ export class Form extends BaseSchema {
       urgencyRequired: boolean;
       urgencyRecipients: Types.ObjectId[] | UserDocument[];
       urgencyThreshold: number;
+    };
+    dependencies?: {
+      questionTitle: string;
+      expectedAnswer: string;
     };
   }>;
 
