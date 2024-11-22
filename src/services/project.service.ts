@@ -7,6 +7,7 @@ import { CreateProjectDto } from 'src/dtos/project/create-dto';
 import { FindPaginated } from 'src/dtos/common/findPaginatel.interface';
 import { IProject } from 'src/schemas/interfaces/project.interface';
 import { User } from 'src/schemas/user';
+import { ProjectCountByUser } from 'src/dtos/project/project-count-by-user';
 
 @Injectable()
 export class ProjectService {
@@ -99,5 +100,53 @@ export class ProjectService {
     project.description = dto.description;
     project.users = dto.users.map((u) => new Types.ObjectId(u));
     return await project.save();
+  }
+
+  async getProjectCountByUser(tenantId: string): Promise<ProjectCountByUser[]> {
+    const result = await this.projectModel.aggregate([
+      {
+        $match: {
+          tenantId: new Types.ObjectId(tenantId),
+        },
+      },
+      {
+        $unwind: '$users',
+      },
+      {
+        $group: {
+          _id: '$users',
+          totalProjects: { $sum: 1 },
+          activeProjects: {
+            $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $project: {
+          userId: '$user._id',
+          userName: '$user.name',
+          totalProjects: 1,
+          activeProjects: 1,
+        },
+      },
+    ]);
+
+    return result.map((item) => ({
+      userId: item.userId,
+      userName: item.userName,
+      totalProjects: item.totalProjects,
+      activeProjects: item.activeProjects,
+    }));
   }
 }
