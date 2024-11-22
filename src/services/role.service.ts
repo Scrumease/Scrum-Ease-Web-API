@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { jwtPayload } from 'src/config/auth/strategy/jwt.strategy';
 import { FindPaginated } from 'src/dtos/common/findPaginatel.interface';
 import { CreateRoleDto } from 'src/dtos/role/create-role.dto';
@@ -75,8 +75,8 @@ export class RoleService {
     };
   }
 
-  async findOne(id: string): Promise<Role> {
-    const role = await this.roleModel.findById(id).exec();
+  async findOne(id: string): Promise<IRole> {
+    const role = await this.roleModel.findById(new Types.ObjectId(id)).exec();
     if (!role) {
       throw new NotFoundException('Cargo não encontrado');
     }

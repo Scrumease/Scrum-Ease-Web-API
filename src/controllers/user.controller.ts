@@ -9,6 +9,8 @@ import {
   Request,
   Query,
   ParseIntPipe,
+  Patch,
+  Req,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import {
@@ -111,5 +113,16 @@ export class UserController {
     @Query('search') search?: string,
   ): Promise<FindPaginated<IUser>> {
     return this.userService.findAll(req.user, page, limit, search);
+  }
+
+  @Patch('role')
+  @ApiOperation({ summary: 'Atualizar o papel de um usuário' })
+  @UseGuards(PermissionsGuard)
+  @Permissions(PermissionsEnum.UPDATE_USER_ROLE)
+  async updateRole(
+    @Body() body: { userId: string; roleId: string },
+    @Request() req,
+  ): Promise<void> {
+    await this.userService.updateUserRole(body.userId, body.roleId, req.user);
   }
 }
