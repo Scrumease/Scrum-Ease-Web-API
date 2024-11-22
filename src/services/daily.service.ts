@@ -108,9 +108,15 @@ export class DailyService {
       user: { name: string; email: string };
       tenantName: string;
       projectName: string;
-      responses: ResponseDaily[];
+      responses: {
+        responses: ResponseDaily;
+        notifyTo: Types.ObjectId[];
+      }[];
     };
-    const responsesToNotify = [];
+    const responsesToNotify: {
+      responses: ResponseDaily;
+      notifyTo: Types.ObjectId[];
+    }[] = [];
     const { questions } = daily.formSnapshot;
 
     for (const question of questions) {
@@ -123,7 +129,11 @@ export class DailyService {
         if (response) {
           const urgency = question.advancedSettings.urgencyThreshold;
           if (urgency <= response.urgencyThreshold) {
-            responsesToNotify.push(response);
+            responsesToNotify.push({
+              responses: response,
+              notifyTo: question.advancedSettings
+                .urgencyRecipients as Types.ObjectId[],
+            });
           }
         }
       }
@@ -140,16 +150,19 @@ export class DailyService {
           await this.projectModel.findById(daily.formSnapshot.projectId)
         ).name,
       };
+
       const tos = (
         await this.userModel.find({
-          _id: {
-            $in: (daily.formSnapshot.projectId as ProjectDocument).users.map(
-              (u) => u._id,
-            ),
-          },
+          _id: { $in: notify.responses.map((u) => u.notifyTo) },
         })
       ).map((e) => e.email);
-      await this.mailService.notifyUrgent(tos, notify);
+
+      await this.mailService.notifyUrgent(tos, {
+        user: notify.user,
+        tenantName: notify.tenantName,
+        projectName: notify.projectName,
+        responses: notify.responses.map((r) => r.responses),
+      });
     }
 
     await daily.updateOne(daily).exec();
