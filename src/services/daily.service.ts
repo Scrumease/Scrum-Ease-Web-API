@@ -117,6 +117,7 @@ export class DailyService {
       responses: ResponseDaily;
       notifyTo: Types.ObjectId[];
     }[] = [];
+
     const { questions } = daily.formSnapshot;
 
     for (const question of questions) {
@@ -153,9 +154,13 @@ export class DailyService {
 
       const tos = (
         await this.userModel.find({
-          _id: { $in: notify.responses.map((u) => u.notifyTo) },
+          _id: {
+            $in: notify.responses.flatMap((u) =>
+              u.notifyTo.map((n) => new Types.ObjectId(n._id)),
+            ),
+          },
         })
-      ).map((e) => e.email);
+      )?.map((e) => e.email);
 
       await this.mailService.notifyUrgent(tos, {
         user: notify.user,
