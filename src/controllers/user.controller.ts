@@ -10,7 +10,6 @@ import {
   Query,
   ParseIntPipe,
   Patch,
-  Req,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import {
@@ -18,7 +17,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiParam,
-  ApiBody,
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
