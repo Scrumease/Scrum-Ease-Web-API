@@ -284,4 +284,25 @@ export class UserService {
     u.password = undefined;
     return u.toObject() as IUser;
   }
+
+  async updateUserRole(userId: string, roleId: string, jwtPayload: jwtPayload) {
+    const user = await this.userModel.findById(new Types.ObjectId(userId));
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    const tenantId = jwtPayload.currentTenant.tenantId;
+    const role = await this.roleService.findOne(roleId);
+    if (!role) {
+      throw new NotFoundException('Cargo não encontrado');
+    }
+    const tenantRole = user.tenantRoles.find(
+      (tr) => tr.tenant.toString() === tenantId.toString(),
+    );
+    if (!tenantRole) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    tenantRole.role = role._id as any;
+    await user.save();
+  }
 }

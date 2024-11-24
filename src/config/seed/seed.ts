@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SeedModule } from './seed.module';
 import { SeedService } from './seed.service';

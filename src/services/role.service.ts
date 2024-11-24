@@ -1,10 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { jwtPayload } from 'src/config/auth/strategy/jwt.strategy';
 import { FindPaginated } from 'src/dtos/common/findPaginatel.interface';
 import { CreateRoleDto } from 'src/dtos/role/create-role.dto';
-import { UpdateRoleDto } from 'src/dtos/role/update-role.dto';
 import {
   PermissionsEnum,
   permissionTranslations,
@@ -14,6 +13,8 @@ import { Role } from 'src/schemas/role';
 
 @Injectable()
 export class RoleService {
+  private readonly logger = new Logger(RoleService.name);
+
   constructor(@InjectModel(Role.name) private roleModel: Model<Role>) {}
 
   async create(
@@ -75,8 +76,8 @@ export class RoleService {
     };
   }
 
-  async findOne(id: string): Promise<Role> {
-    const role = await this.roleModel.findById(id).exec();
+  async findOne(id: string): Promise<IRole> {
+    const role = await this.roleModel.findById(new Types.ObjectId(id)).exec();
     if (!role) {
       throw new NotFoundException('Cargo não encontrado');
     }
@@ -122,7 +123,6 @@ export class RoleService {
     return deletedRole;
   }
 
-  //TODO: chamar o createRole
   async CreateAdminRole(tenantId: unknown): Promise<IRole> {
     const createdRole = new this.roleModel({
       name: 'Administrador',
@@ -147,5 +147,14 @@ export class RoleService {
 
   getPermissions(): Record<string, string> {
     return permissionTranslations;
+  }
+
+  async updateAdminsRoles(): Promise<void> {
+    const result = await this.roleModel.updateMany(
+      { name: 'Administrador' },
+      { permissions: Object.values(PermissionsEnum) },
+    );
+
+    this.logger.log('Admins roles updated: ' + result.modifiedCount);
   }
 }

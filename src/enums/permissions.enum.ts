@@ -20,6 +20,7 @@ export const permissionTranslations: Record<string, string> = {
   [PermissionsEnum.VIEW_USER]: 'Visualizar Usuário',
   [PermissionsEnum.UPDATE_USER]: 'Atualizar Usuário',
   [PermissionsEnum.DELETE_USER]: 'Excluir Usuário',
+  [PermissionsEnum.UPDATE_USER_ROLE]: 'Atualizar Cargo do Usuário',
 
   [PermissionsEnum.CREATE_ROLE]: 'Criar Cargo',
   [PermissionsEnum.VIEW_ROLE]: 'Visualizar Cargo',

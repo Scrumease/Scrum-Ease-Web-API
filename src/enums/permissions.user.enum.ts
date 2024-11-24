@@ -4,4 +4,5 @@ export enum UserPermissionsEnum {
   VIEW_USER = 'VIEW_USER',
   UPDATE_USER = 'UPDATE_USER',
   DELETE_USER = 'DELETE_USER',
+  UPDATE_USER_ROLE = 'UPDATE_USER_ROLE',
 }
