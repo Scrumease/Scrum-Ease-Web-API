@@ -131,7 +131,7 @@ export class FormService {
       .findById(new Types.ObjectId(id))
       .populate({
         path: 'projectId',
-        select: 'users',
+        select: 'users name',
         populate: {
           path: 'users',
           model: User.name,
