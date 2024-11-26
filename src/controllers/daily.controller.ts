@@ -8,7 +8,8 @@ import {
   Query,
   Get,
   Param,
-  Req,
+  Res,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -18,7 +19,9 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/config/auth/guard/jwt.guard';
 import { AnwserDailyDto } from 'src/dtos/daily/anwser.dto';
+import { ExportDailyToCsvDto } from 'src/dtos/daily/export-daily-to-csv.dto';
 import { DailyService } from 'src/services/daily.service';
+import { Response } from 'express';
 
 @Controller('daily')
 @ApiTags('daily')
@@ -86,5 +89,28 @@ export class DailyController {
       },
       req.user,
     );
+  }
+
+  @Post('export/csv')
+  @ApiOperation({ summary: 'Exporta as respostas para csv' })
+  async exportCsv(
+    @Query() query: ExportDailyToCsvDto,
+    @Body('userIds') userIds: string[],
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    const csvData = await this.dailyService.generateCsv(
+      query,
+      userIds,
+      req.user,
+    );
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="daily_${query.formId}_${Date.now()}.csv"`,
+    );
+
+    res.status(HttpStatus.OK).send(csvData);
   }
 }

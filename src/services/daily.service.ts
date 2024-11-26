@@ -8,7 +8,9 @@ import { User, UserDocument } from 'src/schemas/user';
 import { Form } from 'src/schemas/forms';
 import { MailService } from './mail.service';
 import { Tenant } from 'src/schemas/tenant';
-import { Project, ProjectDocument } from 'src/schemas/project';
+import { Project } from 'src/schemas/project';
+import { ExportDailyToCsvDto } from 'src/dtos/daily/export-daily-to-csv.dto';
+import { RoleDocument } from 'src/schemas/role';
 
 @Injectable()
 export class DailyService {
@@ -333,6 +335,90 @@ export class DailyService {
 
       return { responses };
     }
+  }
+
+  async generateCsv(
+    query: ExportDailyToCsvDto,
+    userIds: string[] = [],
+    jwtPayload: jwtPayload,
+  ): Promise<string> {
+    const getUserRole = async (userId: string) => {
+      const user = await this.userModel
+        .findById(new Types.ObjectId(userId))
+        .populate('tenantRoles.role')
+        .exec();
+
+      const tenantRole = user?.tenantRoles.find(
+        (role) => role.tenant.toString() === jwtPayload.currentTenant.tenantId,
+      );
+
+      return (tenantRole?.role as RoleDocument)?.name || 'N/A';
+    };
+
+    const sanitizeAnswer = (answer: string) => `"${answer}"`;
+
+    const responsePromises =
+      userIds.length > 0
+        ? userIds.map((userId) =>
+            this.getResponses(
+              query.formId,
+              {
+                userId,
+                startDate: query.startDate,
+                endDate: query.endDate,
+              },
+              jwtPayload,
+            ),
+          )
+        : [
+            this.getResponses(
+              query.formId,
+              {
+                userId: null,
+                startDate: query.startDate,
+                endDate: query.endDate,
+              },
+              jwtPayload,
+            ),
+          ];
+
+    const responses = (await Promise.all(responsePromises)).flat();
+
+    const uniqueQuestions = Array.from(
+      new Set(
+        responses.flatMap((r) => r.formSnapshot.questions.map((q) => q.text)),
+      ),
+    );
+
+    const header = ['Usuário', 'Cargo', 'Data', ...uniqueQuestions];
+
+    for (const response of responses) {
+      const role = await getUserRole(response.userId as string);
+      response.userInfo.role = role;
+    }
+
+    responses.sort(
+      (a, b) =>
+        new Date(a.date.split('/').reverse().join('-')).getTime() -
+        new Date(b.date.split('/').reverse().join('-')).getTime(),
+    );
+
+    const rows = responses.map((response) => {
+      const { name } = response.userInfo;
+      const role = response.userInfo.role;
+      const date = response.date;
+
+      const answers = uniqueQuestions.map((questionText) => {
+        const res = response.formResponses.find(
+          (r) => r.textQuestion === questionText,
+        );
+        return res ? sanitizeAnswer(res.answer) : '""';
+      });
+
+      return `${name};${role};${date};${answers.join(';')}`;
+    });
+
+    return [header.join(';'), ...rows].join('\n');
   }
 
   private convertDateToUserTimezone(date: Date | string, timezone: string) {
