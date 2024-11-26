@@ -73,7 +73,16 @@ export class DailyService {
       })
       .exec();
 
-    return { today: daily, yesterday: yesterdayDaily };
+    const formDocument = await this.formModel
+      .findById(formId)
+      .populate('projectId')
+      .exec();
+
+    return {
+      today: daily,
+      yesterday: yesterdayDaily,
+      project: formDocument.projectId,
+    };
   }
 
   async anwserDaily(dto: AnwserDailyDto, user: jwtPayload) {
