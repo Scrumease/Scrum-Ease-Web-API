@@ -412,6 +412,10 @@ export class DailyService {
         const res = response.formResponses.find(
           (r) => r.textQuestion === questionText,
         );
+        if (typeof res.answer === 'boolean' && res.answer === true)
+          res.answer = 'sim';
+        if (typeof res.answer === 'boolean' && res.answer === false)
+          res.answer = 'não';
         return res ? sanitizeAnswer(res.answer) : '""';
       });
 
