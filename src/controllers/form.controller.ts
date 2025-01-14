@@ -55,17 +55,21 @@ export class FormController {
     @Request() req: any,
     @Query('page', ParseIntPipe) page: number,
     @Query('limit', ParseIntPipe) limit: number,
+    @Query('search') search: string,
     @Query('projectId') projectId?: string,
     @Query('isCurrentForm') isCurrentForm?: boolean,
     @Query('selfForms', ParseBoolPipe) selfForms: boolean = false,
+    @Query('isActive', ParseBoolPipe) isActive?: boolean,
   ): Promise<FindPaginated<IForm>> {
     return this.formService.findAll(
       req.user,
       page,
       limit,
+      search,
       projectId,
       isCurrentForm,
       selfForms,
+      isActive,
     );
   }
 

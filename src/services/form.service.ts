@@ -43,85 +43,88 @@ export class FormService {
     currentUser: jwtPayload,
     page: number,
     limit: number,
+    search?: string,
     projectId?: string,
     isCurrentForm?: boolean,
     selfForms?: boolean,
+    isActive?: boolean,
   ): Promise<FindPaginated<IForm>> {
     const tenantId = currentUser.currentTenant.tenantId;
-    let forms: IForm[];
 
-    // Ajuste na construção da query
-    const query: any = {
-      tenantId,
+    const match: any = {
+      tenantId: new Types.ObjectId(tenantId),
       ...(projectId && { projectId: new Types.ObjectId(projectId) }),
       ...(isCurrentForm !== undefined && { isCurrentForm }),
     };
 
     if (selfForms) {
-      const projectsWithUser = await this.projectModel
-        .find({
-          users: { $in: [new Types.ObjectId(currentUser.userId)] }, // Busca os projetos que contêm o usuário
-        })
+      const userProjects = await this.projectModel
+        .find({ users: new Types.ObjectId(currentUser.userId) })
         .select('_id')
         .exec();
 
-      const projectIds = projectsWithUser.map((project) => project._id);
-
-      query.projectId = { $in: projectIds };
+      const projectIds = userProjects.map((p) => p._id);
+      match.projectId = { $in: projectIds };
     }
 
-    if (limit < 0) {
-      forms = await this.formModel
-        .find({
-          ...query,
-        })
-        .populate({ path: 'projectId', model: Project.name, select: 'name' })
-        .populate({
-          path: 'questions.advancedSettings.urgencyRecipients',
-          model: User.name,
-          select: 'name email',
-        })
-        .populate({
-          path: 'projectId.users',
-          model: User.name,
-          select: '_id',
-        })
-        .exec();
-    } else {
-      forms = await this.formModel
-        .find({
-          ...query,
-        })
-        .populate({
-          path: 'projectId',
-          model: Project.name,
-          select: 'name users',
-        })
-        .populate({
-          path: 'questions.advancedSettings.urgencyRecipients',
-          model: User.name,
-          select: 'name email',
-        })
-        .populate({
-          path: 'projectId.users',
-          model: User.name,
-          select: '_id',
-        })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .exec();
+    const pipeline: any[] = [
+      { $match: match },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: 'projectId',
+          foreignField: '_id',
+          as: 'project',
+        },
+      },
+      { $unwind: '$project' },
+    ];
+
+    if (isActive !== undefined) {
+      pipeline.push({ $match: { 'project.isActive': isActive } });
+    }
+    if (search) {
+      pipeline.push({
+        $match: {
+          'project.name': { $regex: search, $options: 'i' },
+        },
+      });
     }
 
-    const total = await this.formModel
-      .countDocuments({
-        ...query,
-      })
-      .exec();
+    if (limit > 0) {
+      pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit });
+    }
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'questions.advancedSettings.urgencyRecipients',
+          foreignField: '_id',
+          as: 'questions.advancedSettings.urgencyRecipients',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'project.users',
+          foreignField: '_id',
+          as: 'project.users',
+        },
+      },
+    );
+
+    const forms = await this.formModel.aggregate(pipeline).exec();
+
+    const totalPipeline = pipeline.filter(
+      (stage) => !('$skip' in stage || '$limit' in stage),
+    );
+    const total = (await this.formModel.aggregate(totalPipeline).exec()).length;
 
     return {
       page,
       limit,
-      total: total,
+      total,
       data: forms,
     };
   }
