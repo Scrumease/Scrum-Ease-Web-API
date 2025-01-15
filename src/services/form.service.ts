@@ -45,7 +45,7 @@ export class FormService {
     limit: number,
     search?: string,
     projectId?: string,
-    isCurrentForm?: boolean,
+    isCurrentForm?: string,
     selfForms?: boolean,
     isActive?: boolean,
   ): Promise<FindPaginated<IForm>> {
@@ -54,12 +54,16 @@ export class FormService {
     const match: any = {
       tenantId: new Types.ObjectId(tenantId),
       ...(projectId && { projectId: new Types.ObjectId(projectId) }),
-      ...(isCurrentForm !== undefined && { isCurrentForm }),
+      ...(isCurrentForm !== undefined && {
+        isCurrentForm: isCurrentForm === 'true',
+      }),
     };
 
     if (selfForms) {
       const userProjects = await this.projectModel
-        .find({ users: new Types.ObjectId(currentUser.userId) })
+        .find({
+          users: { $in: [new Types.ObjectId(currentUser.userId)] }, // Busca os projetos que contêm o usuário
+        })
         .select('_id')
         .exec();
 
